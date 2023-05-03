@@ -16,10 +16,10 @@ CURR_USER_KEY = "curr_user"
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    "DATABASE_URL", "postgresql:///warbler")
+    "DATABASE_URL")
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
-app.config['SECRET_KEY'] = 'secret'
+app.config['SECRET_KEY'] = os.environ["SECRET_KEY"]
 #TODO: how do we set up secret keys
 toolbar = DebugToolbarExtension(app)
 
@@ -40,6 +40,11 @@ def add_user_to_g():
     else:
         g.user = None
 
+
+@app.before_request
+def add_csrf():
+
+    g.csrf_form = CSRFProtectForm()
 
 def do_login(user):
     """Log in user."""
@@ -117,20 +122,14 @@ def login():
 @app.post('/logout')
 def logout():
     """Handle logout of user and redirect to homepage."""
-    if not g.user:
+
+    if not g.user or not g.csrf_form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = CSRFProtectForm()
+    do_logout()
+    return redirect('/')
 
-    if form.validate_on_submit():
-
-        do_logout()
-
-        return redirect('/')
-
-    else:
-        raise Unauthorized()
 
     # IMPLEMENT THIS AND FIX BUG
     # DO NOT CHANGE METHOD ON ROUTE
@@ -204,20 +203,17 @@ def start_following(follow_id):
     Redirect to following page for the current for the current user.
     """
 
-    if not g.user:
+    if not g.user or not g.csrf_form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = CSRFProtectForm()
 
-    if form.validate_on_submit():
-        followed_user = User.query.get_or_404(follow_id)
-        g.user.following.append(followed_user)
-        db.session.commit()
+    followed_user = User.query.get_or_404(follow_id)
+    g.user.following.append(followed_user)
+    db.session.commit()
 
-        return redirect(f"/users/{g.user.id}/following")
-    else:
-        raise Unauthorized()
+    return redirect(f"/users/{g.user.id}/following")
+
 
 
 @app.post('/users/stop-following/<int:follow_id>')
@@ -227,21 +223,16 @@ def stop_following(follow_id):
     Redirect to following page for the current for the current user.
     """
 
-    if not g.user:
+    if not g.user or not g.csrf_form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = CSRFProtectForm()
+    followed_user = User.query.get_or_404(follow_id)
+    g.user.following.remove(followed_user)
+    db.session.commit()
 
-    if form.validate_on_submit():
+    return redirect(f"/users/{g.user.id}/following")
 
-        followed_user = User.query.get_or_404(follow_id)
-        g.user.following.remove(followed_user)
-        db.session.commit()
-
-        return redirect(f"/users/{g.user.id}/following")
-    else:
-        raise Unauthorized()
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -283,24 +274,16 @@ def delete_user():
     Redirect to signup page.
     """
 
-    if not g.user:
+    if not g.user or not g.csrf_form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = CSRFProtectForm()
+    do_logout()
 
-    if form.validate_on_submit():
-        do_logout()
+    db.session.delete(g.user)
+    db.session.commit()
 
-        db.session.delete(g.user)
-        db.session.commit()
-
-        return redirect("/signup")
-    else:
-        raise Unauthorized()
-
-
-
+    return redirect("/signup")
 
 ##############################################################################
 # Messages routes:
@@ -348,20 +331,16 @@ def delete_message(message_id):
     Redirect to user page on success.
     """
 
-    if not g.user:
+    if not g.user or not g.csrf_form.validate_on_submit():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    form = CSRFProtectForm()
+    msg = Message.query.get_or_404(message_id)
+    db.session.delete(msg)
+    db.session.commit()
 
-    if form.validate_on_submit():
-        msg = Message.query.get_or_404(message_id)
-        db.session.delete(msg)
-        db.session.commit()
+    return redirect(f"/users/{g.user.id}")
 
-        return redirect(f"/users/{g.user.id}")
-    else:
-        raise Unauthorized()
 
 
 ##############################################################################
