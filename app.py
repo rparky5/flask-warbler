@@ -117,12 +117,20 @@ def login():
 @app.post('/logout')
 def logout():
     """Handle logout of user and redirect to homepage."""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
 
     form = CSRFProtectForm()
 
-    do_logout()
+    if form.validate_on_submit():
 
-    return redirect('/')
+        do_logout()
+
+        return redirect('/')
+
+    else:
+        raise Unauthorized()
 
     # IMPLEMENT THIS AND FIX BUG
     # DO NOT CHANGE METHOD ON ROUTE
@@ -243,6 +251,8 @@ def profile():
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
+
+
 
 
 
