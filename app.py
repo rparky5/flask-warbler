@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm
+from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, UserEditForm
 from models import db, connect_db, User, Message
 from werkzeug.exceptions import Unauthorized
 
@@ -252,9 +252,27 @@ def profile():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    form = UserEditForm(obj = g.user)
+    user = g.user
 
+    if form.validate_on_submit():
+        user.username = form.username.data
+        user.email = form.email.data
+        user.image_url = form.image_url.data
+        user.header_image_url = form.header_image_url.data
+        user.bio = form.bio.data
+        pwd = form.password.data
 
+        valid_user = User.authenticate(g.user.username, pwd)
 
+        if valid_user:
+            db.session.commit()
+            return redirect(f'/users/{user.id}')
+        else:
+            form.username.errors = ["Invalid username/password."]
+            return render_template("users/edit.html", form=form, user=g.user)
+
+    return render_template("users/edit.html", form=form, user=g.user)
 
 
 
@@ -359,8 +377,12 @@ def homepage():
     """
 
     if g.user:
+        following_ids = [f.id for f in g.user.following]
+        following_ids.append(g.user.id)
+        #TODO: how do we fix this workaround
         messages = (Message
                     .query
+                    .filter(Message.user_id.in_(following_ids))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
