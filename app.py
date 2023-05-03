@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm
 from models import db, connect_db, User, Message
+from werkzeug.exceptions import Unauthorized
 
 load_dotenv()
 
@@ -199,11 +200,16 @@ def start_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.append(followed_user)
-    db.session.commit()
+    form = CSRFProtectForm()
 
-    return redirect(f"/users/{g.user.id}/following")
+    if form.validate_on_submit():
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.append(followed_user)
+        db.session.commit()
+
+        return redirect(f"/users/{g.user.id}/following")
+    else:
+        raise Unauthorized()
 
 
 @app.post('/users/stop-following/<int:follow_id>')
@@ -217,11 +223,17 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.remove(followed_user)
-    db.session.commit()
+    form = CSRFProtectForm()
 
-    return redirect(f"/users/{g.user.id}/following")
+    if form.validate_on_submit():
+
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.remove(followed_user)
+        db.session.commit()
+
+        return redirect(f"/users/{g.user.id}/following")
+    else:
+        raise Unauthorized()
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -232,7 +244,8 @@ def profile():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    
+
+
 
 
 @app.post('/users/delete')
@@ -246,12 +259,19 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
+    form = CSRFProtectForm()
 
-    db.session.delete(g.user)
-    db.session.commit()
+    if form.validate_on_submit():
+        do_logout()
 
-    return redirect("/signup")
+        db.session.delete(g.user)
+        db.session.commit()
+
+        return redirect("/signup")
+    else:
+        raise Unauthorized()
+
+
 
 
 ##############################################################################
@@ -304,11 +324,16 @@ def delete_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get_or_404(message_id)
-    db.session.delete(msg)
-    db.session.commit()
+    form = CSRFProtectForm()
 
-    return redirect(f"/users/{g.user.id}")
+    if form.validate_on_submit():
+        msg = Message.query.get_or_404(message_id)
+        db.session.delete(msg)
+        db.session.commit()
+
+        return redirect(f"/users/{g.user.id}")
+    else:
+        raise Unauthorized()
 
 
 ##############################################################################
