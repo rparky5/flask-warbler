@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm
 from models import db, connect_db, User, Message
 
 load_dotenv()
@@ -61,7 +61,7 @@ def signup():
 
     If form not valid, present form.
 
-    If the there already is a user with that username: flash message
+    If there already is a user with that username: flash message
     and re-present form.
     """
 
@@ -75,12 +75,12 @@ def signup():
                 username=form.username.data,
                 password=form.password.data,
                 email=form.email.data,
-                image_url=form.image_url.data or User.image_url.default.arg,
+                image_url=form.image_url.data or User.image_url.default.arg
             )
             db.session.commit()
 
         except IntegrityError:
-            flash("Username already taken", 'danger')
+            flash("Username or email already taken", 'danger')
             return render_template('users/signup.html', form=form)
 
         do_login(user)
@@ -100,7 +100,7 @@ def login():
     if form.validate_on_submit():
         user = User.authenticate(
             form.username.data,
-            form.password.data,
+            form.password.data
         )
 
         if user:
@@ -117,7 +117,11 @@ def login():
 def logout():
     """Handle logout of user and redirect to homepage."""
 
-    form = g.csrf_form
+    form = CSRFProtectForm()
+
+    do_logout()
+
+    return redirect('/')
 
     # IMPLEMENT THIS AND FIX BUG
     # DO NOT CHANGE METHOD ON ROUTE
@@ -224,7 +228,11 @@ def stop_following(follow_id):
 def profile():
     """Update profile for current user."""
 
-    # IMPLEMENT THIS
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    
 
 
 @app.post('/users/delete')
