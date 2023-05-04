@@ -46,6 +46,7 @@
 
     <div class="col-lg-6 col-md-8 col-sm-12">
       <ul class="list-group" id="messages">
+        <!-- think about lessening runtime using a set -->
         {% for msg in messages %}
           <li class="list-group-item">
             <a href="/messages/{{ msg.id }}" class="message-link"></a>
@@ -58,14 +59,16 @@
               <p>{{ msg.text }}</p>
               <form>
                 {{ g.csrf_form.hidden_tag() }}
+                {% if msg not in g.user.messages %}
                 {% if msg in g.user.likes %}
-                <button formaction="/messages/{{msg.id}}/unlike" formmethod="POST">
+                <button class="messages-like-bottom" formaction="/messages/{{msg.id}}/unlike" formmethod="POST">
                   <i class="bi bi-heart-fill"></i>
                 </button>
                 {% else %}
-                <button formaction="/messages/{{msg.id}}/like" formmethod="POST">
+                <button class="messages-like-bottom" formaction="/messages/{{msg.id}}/like" formmethod="POST">
                   <i class="bi bi-heart"></i>
                 </button>
+                {% endif %}
                 {% endif %}
               </form>
             </div>

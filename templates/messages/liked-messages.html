@@ -49,6 +49,12 @@
           <span class="text-muted">
               {{ message.timestamp.strftime('%d %B %Y') }}
             </span>
+            <form>
+              {{ g.csrf_form.hidden_tag() }}
+              <button class="messages-like-bottom" formaction="/messages/{{message.id}}/unlike" formmethod="POST">
+                <i class="bi bi-heart-fill"></i>
+              </button>
+            </form>
         </div>
       </li>
       {%endfor%}

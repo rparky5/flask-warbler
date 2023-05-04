@@ -286,8 +286,8 @@ def delete_user():
 
     return redirect("/signup")
 
-@app.get('/users/likes')
-def show_liked_messages():
+@app.get('/users/<int:user_id>/likes')
+def show_liked_messages(user_id):
     """display page of user's liked messages"""
 
     if not g.user:
@@ -354,7 +354,7 @@ def delete_message(message_id):
     return redirect(f"/users/{g.user.id}")
 
 @app.post('/messages/<int:message_id>/like')
-def like_messages(message_id):
+def like_message(message_id):
     """ append like messages to user liked message and redirect it to user's liked page """
 
     if not g.user or not g.csrf_form.validate_on_submit():
@@ -365,7 +365,7 @@ def like_messages(message_id):
     g.user.likes.append(msg)
     db.session.commit()
 
-    return redirect("/user/likes")
+    return redirect(f"/users/{g.user.id}/likes")
 
 @app.post('/messages/<int:message_id>/unlike')
 def unlike_message(message_id):
@@ -379,7 +379,7 @@ def unlike_message(message_id):
     g.user.likes.remove(msg)
     db.session.commit()
 
-    return redirect("/user/likes")
+    return redirect(f"/users/{g.user.id}/likes")
 
 ##############################################################################
 # Homepage and error pages

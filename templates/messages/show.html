@@ -47,7 +47,19 @@
           <p class="single-message">{{ message.text }}</p>
           <span class="text-muted">
               {{ message.timestamp.strftime('%d %B %Y') }}
-            </span>
+          </span>
+          <form>
+            {{ g.csrf_form.hidden_tag() }}
+            {% if message in g.user.likes %}
+            <button class="messages-like-bottom" formaction="/messages/{{message.id}}/unlike" formmethod="POST">
+              <i class="bi bi-heart-fill"></i>
+            </button>
+            {% else %}
+            <button class="messages-like-bottom" formaction="/messages/{{message.id}}/like" formmethod="POST">
+              <i class="bi bi-heart"></i>
+            </button>
+            {% endif %}
+          </form>
         </div>
       </li>
     </ul>
