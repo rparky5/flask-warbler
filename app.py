@@ -20,7 +20,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ["SECRET_KEY"]
-#TODO: how do we set up secret keys
+
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
@@ -128,7 +128,7 @@ def logout():
         return redirect("/")
 
     do_logout()
-    return redirect('/')
+    return redirect('/login')
 
 
     # IMPLEMENT THIS AND FIX BUG
@@ -356,9 +356,7 @@ def homepage():
     """
 
     if g.user:
-        following_ids = [f.id for f in g.user.following]
-        following_ids.append(g.user.id)
-        #TODO: how do we fix this workaround
+        following_ids = [f.id for f in g.user.following] + [g.user.id]
         messages = (Message
                     .query
                     .filter(Message.user_id.in_(following_ids))
