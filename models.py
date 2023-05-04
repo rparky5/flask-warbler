@@ -35,6 +35,22 @@ class Follow(db.Model):
         primary_key=True,
     )
 
+class Like(db.Model):
+    """which user liked which message("warble")."""
+
+    __tablename__ = 'likes'
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete="cascade"),
+        primary_key=True
+    )
+    message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete="cascade"),
+        primary_key=True,
+    )
+    
 
 class User(db.Model):
     """User in the system."""
@@ -183,23 +199,6 @@ class Message(db.Model):
         db.ForeignKey('users.id', ondelete='CASCADE'),
         nullable=False,
     )
-
-class Like(db.Model):
-    """which user liked which message("warble")."""
-
-    __tablename__ = 'likes'
-
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey('users.id', ondelete="cascade"),
-        primary_key=True
-    )
-    message_id = db.Column(
-        db.Integer,
-        db.ForeignKey('messages.id', ondelete="cascade"),
-        primary_key=True,
-    )
-
 
 def connect_db(app):
     """Connect this database to provided Flask app.

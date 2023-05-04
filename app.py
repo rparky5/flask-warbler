@@ -6,7 +6,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, UserEditForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Like
 from werkzeug.exceptions import Unauthorized
 
 load_dotenv()
@@ -40,11 +40,12 @@ def add_user_to_g():
     else:
         g.user = None
 
-
 @app.before_request
-def add_csrf():
+def add_csrf_to_g():
+    """Form for post requests that don't have their own form"""
 
     g.csrf_form = CSRFProtectForm()
+
 
 def do_login(user):
     """Log in user."""
@@ -341,6 +342,15 @@ def delete_message(message_id):
 
     return redirect(f"/users/{g.user.id}")
 
+@app.post('messages/<int:message_id>/like')
+def show_user_liked_messages(message_id):
+    """ Show a page of all the user's liked messages """
+
+    if not g.user or not g.csrf_form.validate_on_submit():
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+
 
 
 ##############################################################################
@@ -363,6 +373,7 @@ def homepage():
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
+
         return render_template('home.html', messages=messages)
 
     else:
