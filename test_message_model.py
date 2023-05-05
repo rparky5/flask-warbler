@@ -35,9 +35,11 @@ class MessageModelTestCase(TestCase):
 
 
         u1 = User.signup("u1", "u1@email.com", "password", None)
-        m1 = Message(text = "hello",user_id = u1.id)
+        m1 = Message(text="hello")
 
+        u1.messages.append(m1)
         db.session.commit()
+
         self.u1_id = u1.id
         self.m1_id = m1.id
 
@@ -48,10 +50,12 @@ class MessageModelTestCase(TestCase):
 
     def test_message_model(self):
         m1 = Message.query.get(self.m1_id)
-        u1 = User.query.get(self.u1_id)
 
-        # User should have no messages & no followers
-        self.assertEqual(len(u1.messages), 1)
         self.assertEqual(m1.text, "hello")
 
+    def test_user_message(self):
+        m1 = Message.query.get(self.m1_id)
+        u1 = User.query.get(self.u1_id)
 
+        self.assertEqual(u1.messages, [m1])
+        self.assertEqual(m1.user_id, self.u1_id)

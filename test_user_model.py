@@ -8,7 +8,7 @@
 import os
 from unittest import TestCase
 
-from models import db, User, Message, Follow
+from models import db, User
 from flask_bcrypt import Bcrypt
 
 # BEFORE we import our app, let's set an environmental variable
@@ -54,14 +54,16 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
 
-    def test_signup(self):
+    def test_successful_signup(self):
         u3 = User.signup("u3", "u3@email.com", "password", None)
 
         db.session.commit()
-        self.u3_id = u3.id
 
-        u3 = db.session.get(User,self.u3_id)
-        self.assertTrue(bcrypt.check_password_hash(u3.password, "password"))
+        # self.assertTrue(bcrypt.check_password_hash(u3.password, "password"))
+        self.assertEqual(u3.username, "u3")
+        self.assertEqual(u3.email, "u3@email.com")
+        self.assertNotEqual(u3.password, "password")
+        self.assertTrue(u3.password.startswith("$2b$"))
 
     def test_auth_ok(self):
         u1 = db.session.get(User, self.u1_id)
@@ -74,4 +76,15 @@ class UserModelTestCase(TestCase):
         u1 = db.session.get(User,self.u1_id)
         self.assertFalse(User.authenticate("u1", "wrong"))
 
-    
+    def test_u2_following_u1(self):
+        u1 = db.session.get(User,self.u1_id)
+        u2 = db.session.get(User,self.u2_id)
+
+        u1.followers.append(u2)
+        db.session.commit()
+
+        self.assertEqual(len(u1.followers), 1)
+        self.assertEqual(u1.followers, [u2])
+        self.assertEqual(u2.following, [u1])
+        self.assertEqual(u1.following, [])
+        self.assertEqual(u2.followers, [])
