@@ -2,7 +2,7 @@
 
 # run these tests like:
 #
-#    FLASK_DEBUG=False python -m unittest test_message_views.py
+#    FLASK_DEBUG=False python3 -m unittest test_message_views.py
 
 
 import os
@@ -55,6 +55,10 @@ class MessageBaseViewTestCase(TestCase):
 
         self.client = app.test_client()
 
+    def tearDown(self):
+        """Clean up fouled transactions."""
+
+        db.session.rollback()
 
 class MessageAddViewTestCase(MessageBaseViewTestCase):
     def test_add_message(self):
@@ -70,4 +74,13 @@ class MessageAddViewTestCase(MessageBaseViewTestCase):
 
             self.assertEqual(resp.status_code, 302)
 
-            Message.query.filter_by(text="Hello").one()
+            self.assertEqual(resp.location, f"/users/{self.u1_id}")
+
+            message = Message.query.filter_by(text="Hello").one()
+            user = User.query.get(self.u1_id)
+
+            self.assertIn(message, user.messages)
+
+
+
+
