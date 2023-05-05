@@ -73,14 +73,69 @@ class MessageAddViewTestCase(MessageBaseViewTestCase):
             resp = c.post("/messages/new", data={"text": "Hello"})
 
             self.assertEqual(resp.status_code, 302)
-
             self.assertEqual(resp.location, f"/users/{self.u1_id}")
 
-            message = Message.query.filter_by(text="Hello").one()
-            user = User.query.get(self.u1_id)
+            m = Message.query.filter_by(text="Hello").one()
+            u = User.query.get(self.u1_id)
 
-            self.assertIn(message, user.messages)
+            self.assertIn(m, u.messages)
+            self.assertEqual(len(u.messages), 2)
+            self.assertEqual(m.user_id, self.u1_id)
 
+    def test_show_message(self):
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
 
+            resp = c.get(f"/messages/{self.m1_id}")
+            html = resp.get_data(as_text=True)
 
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("m1-text", html)
+            self.assertIn("test messages route", html)
 
+    def test_like_message(self):
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+        u = User.query.get(self.u1_id)
+        m = Message.query.get(self.m1_id)
+
+        resp = c.post(f"/messages/{self.m1_id}/like")
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.location, f"/users/{self.u1_id}/likes")
+        self.assertEqual(u.likes, [m])
+        self.assertEqual(m.liked_by, [u])
+
+class MessageDeleteViewTestCase(MessageBaseViewTestCase):
+    def test_delete_message(self):
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+            resp = c.post(f"/messages/{self.m1_id}/delete")
+            u = User.query.get(self.u1_id)
+
+            self.assertEqual(resp.status_code, 302)
+            self.assertEqual(resp.location, f"/users/{self.u1_id}")
+            self.assertEqual(u.messages, [])
+
+    def test_unlike_message(self):
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+        u = User.query.get(self.u1_id)
+        m = Message.query.get(self.m1_id)
+
+        u.likes.append(m)
+        db.session.commit()
+
+        resp = c.post(f"/messages/{self.m1_id}/unlike")
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.location, f"/users/{self.u1_id}/likes")
+        self.assertEqual(u.likes, [])
+        self.assertEqual(m.liked_by, [])
