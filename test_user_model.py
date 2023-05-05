@@ -9,6 +9,7 @@ import os
 from unittest import TestCase
 
 from models import db, User, Message, Follow
+from flask_bcrypt import Bcrypt
 
 # BEFORE we import our app, let's set an environmental variable
 # to use a different database for tests (we need to do this
@@ -28,6 +29,7 @@ from app import app
 db.drop_all()
 db.create_all()
 
+bcrypt = Bcrypt()
 
 class UserModelTestCase(TestCase):
     def setUp(self):
@@ -51,3 +53,25 @@ class UserModelTestCase(TestCase):
         # User should have no messages & no followers
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
+
+    def test_signup(self):
+        u3 = User.signup("u3", "u3@email.com", "password", None)
+
+        db.session.commit()
+        self.u3_id = u3.id
+
+        u3 = db.session.get(User,self.u3_id)
+        self.assertTrue(bcrypt.check_password_hash(u3.password, "password"))
+
+    def test_auth_ok(self):
+        u1 = db.session.get(User, self.u1_id)
+        self.assertEqual(User.authenticate("u1", "password"), u1)
+
+    def test_auth_fail_no_user(self):
+        self.assertFalse(User.authenticate("user-X", "password"))
+
+    def test_auth_ok_wrong_pwd(self):
+        u1 = db.session.get(User,self.u1_id)
+        self.assertFalse(User.authenticate("u1", "wrong"))
+
+    

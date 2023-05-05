@@ -48,9 +48,9 @@ class Like(db.Model):
     message_id = db.Column(
         db.Integer,
         db.ForeignKey('messages.id', ondelete="cascade"),
-        primary_key=True,
+        primary_key=True
     )
-    
+
 
 class User(db.Model):
     """User in the system."""
